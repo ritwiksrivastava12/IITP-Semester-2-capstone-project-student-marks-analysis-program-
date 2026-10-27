@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+<section class="welcome-hero">
+    <div class="welcome-hero-copy">
+        <span class="eyebrow">For your own college record</span>
+        <h2>Your marks, SGPA and CGPA<br><span class="accent-text">in one honest place.</span></h2>
+        <p class="hero-lead">
+            Track semester subjects, credits and marks. CampusMarks calculates your SGPA,
+            CGPA, grades and personal trends — just your own academic record, nothing else.
+        </p>
+        <div class="hero-actions">
+            <a class="button button-primary" href="{{ url_for('main.setup') }}">Set up my profile</a>
+            <form method="post" action="{{ url_for('main.load_demo') }}" class="inline-demo-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="button button-secondary">Explore the college demo</button>
+            </form>
+        </div>
+        <ul class="hero-feature-list" aria-label="Application highlights">
+            <li>One student only</li>
+            <li>No login</li>
+            <li>Local SQLite</li>
+            <li>SGPA &amp; CGPA</li>
+        </ul>
+    </div>
+    <div class="welcome-visual" aria-hidden="true">
+        <div class="visual-orbit orbit-one"></div>
+        <div class="visual-orbit orbit-two"></div>
+        <div class="preview-card preview-card-main">
+            <div class="preview-topline">
+                <span>B.Tech · CSE</span>
+                <span class="preview-pill">Semester 4</span>
+            </div>
+            <div class="preview-score-row">
+                <strong>9.00<small>CGPA</small></strong>
+                <span class="status-badge status-cleared">On track</span>
+            </div>
+            <div class="preview-bar"><span style="width: 90%"></span></div>
+            <div class="preview-grid">
+                <div><span>Credits</span><strong>51</strong></div>
+                <div><span>Semesters</span><strong>4</strong></div>
+                <div><span>Backlogs</span><strong>0</strong></div>
+            </div>
+        </div>
+        <div class="preview-card preview-card-small">
+            <span class="mini-label">Latest provisional SGPA</span>
+            <strong>9.30</strong>
+            <span class="mini-value">2 subjects still pending</span>
+        </div>
+    </div>
+</section>
+
+<section class="feature-strip" aria-label="What the application does">
+    <article>
+        <span class="feature-number">01</span>
+        <h3>Built for one student</h3>
+        <p>Your own profile, semesters and subjects. There are no class lists or student directories.</p>
+    </article>
+    <article>
+        <span class="feature-number">02</span>
+        <h3>Credit-aware grades</h3>
+        <p>Subject marks become grades, SGPA and CGPA using a clear 10-point scale.</p>
+    </article>
+    <article>
+        <span class="feature-number">03</span>
+        <h3>Honest pending marks</h3>
+        <p>A blank subject is pending, never zero. In-progress semesters stay out of the official CGPA.</p>
+    </article>
+    <article>
+        <span class="feature-number">04</span>
+        <h3>Real reports</h3>
+        <p>Five Matplotlib charts, a printable transcript and CSV exports from your saved records.</p>
+    </article>
+</section>
+
+<div class="welcome-columns">
+    <section class="card">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Start here</p>
+                <h2>Your college transcript</h2>
+            </div>
+        </div>
+        <p class="muted">
+            Add a semester such as “Semester 1 · 2024-25”, then add each subject with its
+            credits and maximum marks. Enter marks when results arrive; you can update them later.
+        </p>
+        <ul class="criteria-list welcome-checklist">
+            <li><span class="criteria-check">✓</span> Subject percentages and grade letters</li>
+            <li><span class="criteria-check">✓</span> Credit-weighted SGPA for every semester</li>
+            <li><span class="criteria-check">✓</span> Official CGPA from fully entered semesters</li>
+            <li><span class="criteria-check">✓</span> Best subject, weak spots and target progress</li>
+        </ul>
+        <a class="button button-primary button-full" href="{{ url_for('main.setup') }}">Create my profile</a>
+    </section>
+
+    <div class="welcome-side-column">
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">Demo transcript</p>
+                    <h2>See it with real data</h2>
+                </div>
+            </div>
+            <p class="muted">
+                Load a fictional B.Tech Computer Science student with four semesters,
+                20 subjects and two intentionally pending marks. You can reset it at any time.
+            </p>
+            <form method="post" action="{{ url_for('main.load_demo') }}" class="form-stack">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="button button-secondary button-full">Load the college demo</button>
+            </form>
+        </section>
+
+        <aside class="notice-card" aria-label="Privacy note">
+            <span class="notice-icon" aria-hidden="true">i</span>
+            <div>
+                <h3>Private by design, not by password</h3>
+                <p>
+                    There is no account or cloud sync. Records live in a local SQLite file.
+                    Anyone who can access this computer or its files can read them, so use
+                    appropriate care on shared machines.
+                </p>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<section class="idea-strip">
+    <span>Everything in one place</span>
+    <ul>
+        <li>Semester 1</li>
+        <li>Data Structures</li>
+        <li>Credits</li>
+        <li>SGPA</li>
+        <li>CGPA</li>
+        <li>Transcript CSV</li>
+    </ul>
+</section>
+{% endblock %}

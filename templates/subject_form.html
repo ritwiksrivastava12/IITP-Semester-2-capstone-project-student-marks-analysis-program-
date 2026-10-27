@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ form_heading }}{% endblock %}
+{% block page_eyebrow %}{{ form_kicker }}{% endblock %}
+{% block page_title %}{{ form_heading }}{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-page-main">
+        <a class="breadcrumb" href="{{ cancel_url }}">← Semester {{ semester.number }}</a>
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">Semester {{ semester.number }}{% if semester.academic_year %} · {{ semester.academic_year }}{% endif %}</p>
+                    <h2>{% if subject %}Update subject details{% else %}Add a college subject{% endif %}</h2>
+                </div>
+            </div>
+            <form method="post" action="{{ form_action }}" class="form-stack">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-grid two-column">
+                    <div class="field">
+                        <label for="subject-name">Subject name <span class="required-mark">*</span></label>
+                        <input id="subject-name" name="name" type="text" maxlength="80" required value="{{ form_values.get('name', '') }}" placeholder="e.g. Database Systems">
+                    </div>
+                    <div class="field">
+                        <label for="subject-code">Subject code</label>
+                        <input id="subject-code" name="code" type="text" maxlength="20" value="{{ form_values.get('code', '') }}" placeholder="e.g. CS303">
+                        <span class="field-hint">Optional. Shown on your transcript and charts.</span>
+                    </div>
+                    <div class="field">
+                        <label for="subject-credits">Credits <span class="required-mark">*</span></label>
+                        <input id="subject-credits" name="credits" type="number" min="0.5" max="20" step="0.5" required value="{{ form_values.get('credits', '3') }}">
+                        <span class="field-hint">Credit weight used for SGPA and CGPA.</span>
+                    </div>
+                    <div class="field">
+                        <label for="subject-max">Maximum marks <span class="required-mark">*</span></label>
+                        <input id="subject-max" name="max_marks" type="number" min="1" max="1000" step="any" required value="{{ form_values.get('max_marks', '100') }}">
+                        <span class="field-hint">Use the maximum for this subject, such as 100 or 150.</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="subject-marks">Marks obtained</label>
+                    <input id="subject-marks" name="marks_obtained" type="number" min="0" max="1000" step="any" value="{{ form_values.get('marks_obtained', '') }}" placeholder="Leave blank if pending">
+                    <span class="field-hint">Optional. Blank means pending, not zero. You can enter or change this later from the semester page.</span>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="button button-primary">{{ submit_label }}</button>
+                    <a class="button button-ghost" href="{{ cancel_url }}">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <aside class="form-page-side">
+        <section class="card guidance-card">
+            <p class="section-kicker">Grading reference</p>
+            <h3>Marks become grade points</h3>
+            <div class="table-wrap">
+                <table class="data-table grade-table">
+                    <thead><tr><th>Marks</th><th>Grade</th><th>Points</th></tr></thead>
+                    <tbody>
+                        {% for minimum, letter, points, label in grade_bands %}
+                        <tr>
+                            <td>{% if minimum == 0 %}Below 40%{% else %}{{ minimum|num(0) }}%+{% endif %}</td>
+                            <td><span class="grade-chip grade-{{ letter|grade_class }}">{{ letter }}</span></td>
+                            <td>{{ points }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="small-note">A subject at 40% or above is passed. SGPA weights grade points by subject credits.</p>
+        </section>
+
+        <section class="card guidance-card">
+            <p class="section-kicker">Time-saving tip</p>
+            <h3>You do not need every mark</h3>
+            <p>Add the full semester structure at the start. Enter each mark when it is published, and the SGPA updates immediately.</p>
+            <a class="button button-secondary button-full" href="{{ url_for('main.subject_new', semester_id=semester.id) }}">Add another subject</a>
+        </section>
+    </aside>
+</div>
+
+{% if subject %}
+<section class="card danger-zone subject-delete-card">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Permanent action</p>
+            <h2>Delete {{ subject.name }}</h2>
+        </div>
+    </div>
+    <p>This removes the subject and its saved mark from Semester {{ semester.number }}.</p>
+    <form method="post" action="{{ url_for('main.subject_delete', subject_id=subject.id) }}" data-confirm="Delete {{ subject.name }} and its mark? This cannot be undone.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="button button-danger">Delete subject</button>
+    </form>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_eyebrow %}Profile &amp; preferences{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <div>
+        <p class="section-kicker">Your space</p>
+        <h2>Keep your transcript accurate.</h2>
+        <p class="muted">Update your profile and target CGPA, review the grading scale, or export your record. Everything on this page belongs to your own transcript.</p>
+    </div>
+    <div class="intro-actions">
+        <a class="button button-secondary" href="{{ url_for('main.results') }}">View transcript</a>
+    </div>
+</section>
+
+<div class="settings-layout">
+    <div class="settings-main">
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">Student profile</p>
+                    <h2>Identity and course</h2>
+                </div>
+                <span class="student-avatar small-avatar" aria-hidden="true">{{ profile.name|initials }}</span>
+            </div>
+            <div class="creation-meta">
+                <div><span>Semesters</span><strong>{{ transcript.semester_count }}</strong></div>
+                <div><span>Subjects</span><strong>{{ transcript.subject_count }}</strong></div>
+                <div><span>Graded</span><strong>{{ transcript.graded_subject_count }}</strong></div>
+                <div><span>Credits</span><strong>{{ transcript.credits_total|num(1) }}</strong></div>
+                <div><span>CGPA</span><strong>{{ transcript.cgpa|num }}</strong></div>
+            </div>
+            <form method="post" action="{{ url_for('main.update_profile') }}" class="form-stack">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-grid two-column">
+                    <div class="field">
+                        <label for="settings-name">Name <span class="required-mark">*</span></label>
+                        <input id="settings-name" name="name" type="text" maxlength="80" required value="{{ profile.name }}">
+                    </div>
+                    <div class="field">
+                        <label for="settings-college">College / university</label>
+                        <input id="settings-college" name="college" type="text" maxlength="120" value="{{ profile.college or '' }}">
+                    </div>
+                    <div class="field">
+                        <label for="settings-degree">Degree</label>
+                        <input id="settings-degree" name="degree" type="text" maxlength="60" value="{{ profile.degree or '' }}">
+                    </div>
+                    <div class="field">
+                        <label for="settings-branch">Branch / major</label>
+                        <input id="settings-branch" name="branch" type="text" maxlength="80" value="{{ profile.branch or '' }}">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="button button-primary">Save profile</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">Goal</p>
+                    <h2>Target CGPA</h2>
+                </div>
+                <span class="current-pill">{{ transcript.target_cgpa|num }}</span>
+            </div>
+            <p class="muted">The target appears as a line on your SGPA/CGPA chart and drives the target gap on the dashboard.</p>
+            <form method="post" action="{{ url_for('main.update_target') }}" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="field grow-field">
+                    <label for="target-cgpa">Target CGPA</label>
+                    <div class="input-suffix">
+                        <input id="target-cgpa" name="target_cgpa" type="number" min="0" max="10" step="0.01" required value="{{ transcript.target_cgpa|input_num }}">
+                        <span>/ 10</span>
+                    </div>
+                    <span class="field-hint">
+                        {% if transcript.cgpa is not none %}
+                            {% if transcript.target_met %}Your current CGPA is above this target.{% else %}You are {{ transcript.target_gap|num }} CGPA points below this target.{% endif %}
+                        {% else %}Your target is stored and will be compared once you have a complete semester.{% endif %}
+                    </span>
+                </div>
+                <button type="submit" class="button button-secondary">Update target</button>
+            </form>
+        </section>
+
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">Grading reference</p>
+                    <h2>The fixed 10-point scale</h2>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="data-table grade-scale-table">
+                    <thead><tr><th scope="col">Marks percentage</th><th scope="col">Grade</th><th scope="col">Grade points</th><th scope="col">Description</th></tr></thead>
+                    <tbody>
+                        {% for minimum, letter, points, label in grade_bands %}
+                        <tr>
+                            <td>{% if minimum == 0 %}Below 40%{% else %}{{ minimum|num(0) }}% and above{% endif %}</td>
+                            <td><span class="grade-chip grade-{{ letter|grade_class }}">{{ letter }}</span></td>
+                            <td>{{ points }}</td>
+                            <td>{{ label }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="small-note">SGPA = Σ(subject credits × grade points) ÷ Σ(subject credits) for graded subjects. CGPA uses complete semesters only. Passing requires 40% in each subject.</p>
+        </section>
+
+        <section class="card danger-zone">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">Permanent action</p>
+                    <h2>Delete all my data</h2>
+                </div>
+            </div>
+            <p>This permanently removes your profile, every semester, every subject and every mark. Export anything you want to keep first. This cannot be undone.</p>
+            <form method="post" action="{{ url_for('main.reset_data') }}" class="danger-form" data-confirm="Delete your entire transcript? This cannot be undone.">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="field grow-field">
+                    <label for="reset-confirmation">Type DELETE to confirm</label>
+                    <input id="reset-confirmation" name="confirm_text" type="text" autocomplete="off" placeholder="DELETE" required>
+                </div>
+                <button type="submit" class="button button-danger">Delete all data</button>
+            </form>
+        </section>
+    </div>
+
+    <aside class="settings-side">
+        <section class="card guidance-card">
+            <p class="section-kicker">Save a copy</p>
+            <h3>CSV exports</h3>
+            <p>Your data belongs to you. Download a subject-level transcript or a semester summary at any time.</p>
+            <div class="stacked-actions">
+                <a class="button button-secondary button-full" href="{{ url_for('main.export_csv', export_type='transcript') }}">Transcript CSV</a>
+                <a class="button button-secondary button-full" href="{{ url_for('main.export_csv', export_type='semesters') }}">Semester summary CSV</a>
+            </div>
+        </section>
+
+        <section class="card guidance-card">
+            <p class="section-kicker">Privacy</p>
+            <h3>No account, no cloud</h3>
+            <p>This app has no login or signup. Everything is stored in a local SQLite file, so the privacy boundary is your computer user account and file permissions.</p>
+        </section>
+
+        <section class="card guidance-card">
+            <p class="section-kicker">Need a fresh demo?</p>
+            <h3>Reset, then seed</h3>
+            <p>Delete all data here, then run <code>.\.venv\Scripts\python.exe seed_demo.py</code> to restore the fictional college transcript.</p>
+        </section>
+    </aside>
+</div>
+{% endblock %}

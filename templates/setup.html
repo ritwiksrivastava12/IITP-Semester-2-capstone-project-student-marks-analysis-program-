@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Set up your profile{% endblock %}
+{% block page_eyebrow %}First step{% endblock %}
+{% block page_title %}Set up your student profile{% endblock %}
+
+{% block content %}
+<div class="form-page narrow-form-page">
+    <div class="form-page-main">
+        <a class="breadcrumb" href="{{ url_for('main.index') }}">← Back to welcome</a>
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">Personal details</p>
+                    <h2>Who is this transcript for?</h2>
+                </div>
+            </div>
+            <p class="muted">This app stores only your own academic record. You can edit these details later in Settings.</p>
+
+            <form method="post" action="{{ url_for('main.setup') }}" class="form-stack">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-grid two-column">
+                    <div class="field">
+                        <label for="setup-name">Your name <span class="required-mark">*</span></label>
+                        <input id="setup-name" name="name" type="text" maxlength="80" required autocomplete="name" value="{{ form_values.get('name', '') }}" placeholder="e.g. Aarav Mehta">
+                    </div>
+                    <div class="field">
+                        <label for="setup-college">College / university</label>
+                        <input id="setup-college" name="college" type="text" maxlength="120" autocomplete="organization" value="{{ form_values.get('college', '') }}" placeholder="e.g. National Institute of Technology">
+                    </div>
+                    <div class="field">
+                        <label for="setup-degree">Degree</label>
+                        <input id="setup-degree" name="degree" type="text" maxlength="60" value="{{ form_values.get('degree', '') }}" placeholder="e.g. B.Tech">
+                    </div>
+                    <div class="field">
+                        <label for="setup-branch">Branch / major</label>
+                        <input id="setup-branch" name="branch" type="text" maxlength="80" value="{{ form_values.get('branch', '') }}" placeholder="e.g. Computer Science &amp; Engineering">
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="setup-target">Target CGPA</label>
+                    <div class="input-suffix">
+                        <input id="setup-target" name="target_cgpa" type="number" min="0" max="10" step="0.01" required value="{{ form_values.get('target_cgpa', '8.5') }}">
+                        <span>/ 10</span>
+                    </div>
+                    <span class="field-hint">Used for the target line on charts and the gap shown on your dashboard.</span>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="button button-primary">Create my profile</button>
+                    <a class="button button-ghost" href="{{ url_for('main.index') }}">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <aside class="form-page-side">
+        <section class="card guidance-card">
+            <p class="section-kicker">What happens next</p>
+            <h3>Three short steps</h3>
+            <ol class="number-list">
+                <li><span>1</span><p>Create a semester and add its subjects and credits.</p></li>
+                <li><span>2</span><p>Enter the marks you already have. Blank marks remain pending.</p></li>
+                <li><span>3</span><p>Review SGPA, CGPA, charts and your printable transcript.</p></li>
+            </ol>
+        </section>
+
+        <section class="card guidance-card">
+            <p class="section-kicker">No data yet?</p>
+            <h3>Load a complete demo</h3>
+            <p>The demo uses a fictional four-semester B.Tech CSE transcript. It fills the empty database with a complete example record, not a second student profile.</p>
+            <form method="post" action="{{ url_for('main.load_demo') }}" class="form-stack">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="button button-secondary button-full">Load the college demo</button>
+            </form>
+        </section>
+
+        <aside class="notice-card">
+            <span class="notice-icon" aria-hidden="true">i</span>
+            <div>
+                <h3>Local data only</h3>
+                <p>No account, password or cloud service is involved. Your information is stored in this project’s local SQLite database.</p>
+            </div>
+        </aside>
+    </aside>
+</div>
+{% endblock %}

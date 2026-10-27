@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Transcript{% endblock %}
+{% block page_eyebrow %}Complete record{% endblock %}
+{% block page_title %}Academic transcript{% endblock %}
+{% block topbar_actions %}
+<div class="header-action-group no-print">
+    <a class="button button-secondary" href="{{ url_for('main.export_csv', export_type='transcript') }}">Transcript CSV</a>
+    <button class="button button-primary" type="button" data-print>Print</button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="report-actions no-print">
+    <a class="button button-secondary" href="{{ url_for('main.export_csv', export_type='semesters') }}">Semester summary CSV</a>
+    <button class="button button-primary" type="button" data-print>Print transcript</button>
+</div>
+
+{% if not transcript.has_data %}
+<section class="card">
+    <div class="empty-state">
+        <span class="empty-mark" aria-hidden="true">≡</span>
+        <h3>No transcript data yet</h3>
+        <p>Add a semester and at least one subject to create your transcript.</p>
+        <a class="button button-primary" href="{{ url_for('main.semester_new') }}">Add semester</a>
+    </div>
+</section>
+{% else %}
+<article class="report-sheet">
+    <header class="report-header">
+        <div class="report-brand">
+            <span class="brand-mark" aria-hidden="true">C</span>
+            <div>
+                <p>Personal college record</p>
+                <h2>CampusMarks Transcript</h2>
+            </div>
+        </div>
+        <div class="report-meta">
+            <span>Generated</span>
+            <strong>{{ today.strftime('%d %B %Y') }}</strong>
+            <span>Local SQLite record</span>
+        </div>
+    </header>
+
+    <section class="report-student-strip">
+        <div class="report-student-identity">
+            <span class="avatar avatar-large" aria-hidden="true">{{ profile.name|initials }}</span>
+            <div>
+                <h3>{{ profile.name }}</h3>
+                <p>
+                    {{ profile.degree or 'Degree not set' }}{% if profile.branch %} · {{ profile.branch }}{% endif %}
+                    {% if profile.college %}<br>{{ profile.college }}{% endif %}
+                </p>
+            </div>
+        </div>
+        <span class="status-badge report-status {% if transcript.has_backlog %}status-backlog{% elif transcript.has_pending %}status-in-progress{% else %}status-cleared{% endif %}">
+            {% if transcript.has_backlog %}Backlog recorded{% elif transcript.has_pending %}In progress{% else %}All recorded semesters cleared{% endif %}
+        </span>
+    </section>
+
+    <section class="report-summary-grid" aria-label="Transcript summary">
+        <div class="report-summary-item">
+            <span>CGPA</span>
+            <strong>{{ transcript.cgpa|num }} <small>/ 10</small></strong>
+            <span class="small-note">Completed semesters only</span>
+        </div>
+        <div class="report-summary-item">
+            <span>Overall percentage</span>
+            <strong>{{ transcript.completed_percentage|num(1) }}<small>%</small></strong>
+            <span class="small-note">{{ transcript.total_completed_marks|num(0) }} / {{ transcript.max_completed_marks|num(0) }} marks</span>
+        </div>
+        <div class="report-summary-item">
+            <span>Credits earned</span>
+            <strong>{{ transcript.credits_earned|num(1) }} <small>/ {{ transcript.credits_total|num(1) }}</small></strong>
+            <span class="small-note">{{ transcript.credits_pending|num(1) }} pending</span>
+        </div>
+        <div class="report-summary-item">
+            <span>Semesters</span>
+            <strong>{{ transcript.completed_semester_count }} <small>/ {{ transcript.semester_count }} complete</small></strong>
+            <span class="small-note">{{ transcript.subject_count }} subjects in total</span>
+        </div>
+    </section>
+
+    <div class="report-progress">
+        <span>Target {{ transcript.target_cgpa|num }} CGPA</span>
+        <div class="progress-track progress-large">
+            <span class="progress-fill {{ 'bar-fail' if transcript.has_backlog else ('bar-incomplete' if transcript.has_pending else '') }}" style="width: {{ ((transcript.cgpa / 10 * 100) if transcript.cgpa is not none else 0)|round(1) }}%"></span>
+        </div>
+        <span>{% if transcript.cgpa is not none %}{{ transcript.cgpa|num }} current{% else %}No CGPA yet{% endif %}</span>
+    </div>
+
+    {% if transcript.has_pending %}
+    <div class="report-alert report-alert-incomplete">
+        <strong>{{ transcript.pending_subject_count }} subject{{ '' if transcript.pending_subject_count == 1 else 's' }} pending</strong>
+        <p>Pending subjects are excluded from provisional SGPA and keep their semester out of the official CGPA. Blank marks are never treated as zero.</p>
+    </div>
+    {% endif %}
+    {% if transcript.has_backlog %}
+    <div class="report-alert report-alert-fail">
+        <strong>{{ transcript.failed_subject_count }} backlog subject{{ '' if transcript.failed_subject_count == 1 else 's' }}</strong>
+        <p>{{ transcript.failed_subjects|map(attribute='name')|join(', ') }} scored below 40%. Backlog credits are included in SGPA and CGPA at zero grade points.</p>
+    </div>
+    {% endif %}
+
+    {% for semester in transcript.semesters %}
+    <section class="report-section">
+        <div class="report-section-heading">
+            <div>
+                <h3>Semester {{ semester.number }}{% if semester.academic_year %} · {{ semester.academic_year }}{% endif %}</h3>
+                <span class="small-note">{{ semester.subject_count }} subjects · {{ semester.credits_total|num(1) }} credits</span>
+            </div>
+            <div class="report-section-metrics">
+                <span class="status-badge status-{{ semester.status|status_class }}">{{ semester.status|status_label }}</span>
+                <strong>{{ semester.sgpa|num }} SGPA</strong>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table report-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Code</th>
+                        <th scope="col">Subject</th>
+                        <th scope="col">Credits</th>
+                        <th scope="col">Max</th>
+                        <th scope="col">Marks</th>
+                        <th scope="col">%</th>
+                        <th scope="col">Grade</th>
+                        <th scope="col">Points</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject in semester.subjects %}
+                    <tr class="{{ 'row-incomplete' if subject.is_pending }}">
+                        <td>{{ subject.code or '—' }}</td>
+                        <td><strong>{{ subject.name }}</strong></td>
+                        <td>{{ subject.credits|num(1) }}</td>
+                        <td>{{ subject.max_marks|num(0) }}</td>
+                        <td>{{ subject.marks_obtained|num(0) }}</td>
+                        <td>{{ subject.percentage|num(1) }}</td>
+                        <td>
+                            {% if subject.grade_letter %}<span class="grade-chip grade-{{ subject.grade_letter|grade_class }}">{{ subject.grade_letter }}</span>{% else %}—{% endif %}
+                        </td>
+                        <td>{{ subject.grade_points if subject.grade_points is not none else '—' }}</td>
+                        <td><span class="status-badge status-{{ subject.status|status_class }}">{{ subject.status|status_label }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th scope="row" colspan="2">Semester totals</th>
+                        <th>{{ semester.credits_total|num(1) }}</th>
+                        <th>{{ semester.graded_max_marks|num(0) }}</th>
+                        <th>{{ semester.marks_total|num(0) }}</th>
+                        <th>{{ semester.percentage|num(1) }}%</th>
+                        <th colspan="3">{{ semester.sgpa|num }} SGPA</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+    {% endfor %}
+
+    <footer class="report-footer">
+        <p>{{ profile.name }} · {{ profile.college or 'College not set' }}</p>
+        <p>Generated by CampusMarks from local records · Not an official university document</p>
+    </footer>
+</article>
+{% endif %}
+{% endblock %}

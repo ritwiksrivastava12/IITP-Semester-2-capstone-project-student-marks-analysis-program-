@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Charts & reports{% endblock %}
+{% block page_eyebrow %}Visual reporting{% endblock %}
+{% block page_title %}Charts &amp; reports{% endblock %}
+{% block topbar_actions %}
+<div class="header-action-group no-print">
+    <button class="button button-secondary" type="button" data-print>Print page</button>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <div>
+        <p class="section-kicker">Your data, visualised</p>
+        <h2>Five views of the same transcript.</h2>
+        <p class="muted">All charts are generated from your saved marks. Pending subjects are shown honestly and are never included as zero.</p>
+    </div>
+    <div class="intro-actions no-print">
+        <a class="button button-secondary" href="{{ url_for('main.export_csv', export_type='semesters') }}">Semester summary CSV</a>
+    </div>
+</section>
+
+{% if not transcript.has_data %}
+<div class="callout callout-warning">
+    <div>
+        <strong>There are no marks to chart yet.</strong>
+        <p>Add a semester and enter at least one subject mark. The charts below will show their empty states until then.</p>
+    </div>
+    <a class="button button-secondary button-compact" href="{{ url_for('main.semester_new') }}">Add semester</a>
+</div>
+{% endif %}
+
+<section class="chart-report-grid">
+    {% for item in chart_items %}
+    <section class="card chart-card {{ 'chart-card-wide' if item.key == 'subject_marks' }}">
+        <div class="chart-card-heading">
+            <span class="chart-letter">{{ 'ABCDE'[loop.index0] }}</span>
+            <div>
+                <h2>{{ item.title }}</h2>
+                <p>{{ item.description }}</p>
+            </div>
+        </div>
+        <img class="report-chart" src="{{ url_for('main.chart_image', chart_name=item.key, v=chart_version) }}" alt="Chart {{ 'ABCDE'[loop.index0] }}: {{ item.title }}">
+    </section>
+    {% endfor %}
+</section>
+
+<section class="report-export-grid no-print" aria-label="CSV downloads">
+    <article class="export-card">
+        <span class="export-icon" aria-hidden="true">CSV</span>
+        <div>
+            <h3>Subject-level transcript</h3>
+            <p>One row per subject with semester, credits, maximum marks, marks, percentage, grade, grade points and status.</p>
+            <a class="button button-secondary button-compact" href="{{ url_for('main.export_csv', export_type='transcript') }}">Download transcript CSV</a>
+        </div>
+    </article>
+    <article class="export-card">
+        <span class="export-icon" aria-hidden="true">CSV</span>
+        <div>
+            <h3>Semester summary</h3>
+            <p>One row per semester with subject counts, credits, SGPA, percentage and clearance status.</p>
+            <a class="button button-secondary button-compact" href="{{ url_for('main.export_csv', export_type='semesters') }}">Download semester CSV</a>
+        </div>
+    </article>
+</section>
+
+<section class="card report-notes no-print">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">How to read your reports</p>
+            <h2>One consistent grading model</h2>
+        </div>
+    </div>
+    <div class="notes-grid">
+        <div>
+            <h3>SGPA</h3>
+            <p>Credit-weighted grade points for one semester. If marks are missing, the displayed SGPA is provisional and uses only graded subjects.</p>
+        </div>
+        <div>
+            <h3>CGPA</h3>
+            <p>Credit-weighted grade points across complete semesters only. A semester with any pending mark is excluded until it is complete.</p>
+        </div>
+        <div>
+            <h3>Grade scale</h3>
+            <p>O 10 · A+ 9 · A 8 · B+ 7 · B 6 · C 5 · F 0. A subject passes at 40% or above.</p>
+        </div>
+        <div>
+            <h3>Charts</h3>
+            <p>Charts A–E are rendered on demand and never cached. Their numbers come from the same transcript snapshot as the pages.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

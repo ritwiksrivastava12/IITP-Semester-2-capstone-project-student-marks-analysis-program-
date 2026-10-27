@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CampusMarks — a private college marks, SGPA and CGPA tracker for one student.">
+    <title>{% block title %}Dashboard{% endblock %} · CampusMarks</title>
+    <script>
+        (function () {
+            try {
+                var savedTheme = localStorage.getItem("marks-theme");
+                if (savedTheme === "dark" || savedTheme === "light") {
+                    document.documentElement.setAttribute("data-theme", savedTheme);
+                }
+            } catch (error) { /* Theme storage is optional. */ }
+        }());
+    </script>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="{{ 'app-body' if profile else 'public-body' }}">
+    {% set endpoint = request.endpoint or '' %}
+    <div class="app-shell {{ 'public-shell' if not profile }}">
+        {% if profile %}
+        <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+            <div class="sidebar-brand-row">
+                <a class="brand" href="{{ url_for('main.dashboard') }}">
+                    <span class="brand-mark" aria-hidden="true">C</span>
+                    <span class="brand-copy">
+                        <strong>CampusMarks</strong>
+                        <small>College transcript</small>
+                    </span>
+                </a>
+                <button class="icon-button sidebar-close" type="button" data-sidebar-close aria-label="Close navigation">×</button>
+            </div>
+
+            <div class="student-panel">
+                <span class="student-avatar" aria-hidden="true">{{ profile.name|initials }}</span>
+                <div class="student-panel-copy">
+                    <span class="student-panel-label">My transcript</span>
+                    <strong class="student-name">{{ profile.name }}</strong>
+                    <span class="student-meta">
+                        {{ profile.degree or 'College student' }}{% if profile.branch %} · {{ profile.branch }}{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <p class="nav-label">Academics</p>
+                <a class="nav-link {{ 'active' if endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}">
+                    <span class="nav-icon" aria-hidden="true">▦</span> Dashboard
+                </a>
+                <a class="nav-link {{ 'active' if endpoint in ['main.semesters', 'main.semester_detail', 'main.semester_new', 'main.semester_edit', 'main.subject_new', 'main.subject_edit', 'main.save_marks'] }}" href="{{ url_for('main.semesters') }}">
+                    <span class="nav-icon" aria-hidden="true">▤</span> Semesters
+                </a>
+                <a class="nav-link {{ 'active' if endpoint == 'main.results' }}" href="{{ url_for('main.results') }}">
+                    <span class="nav-icon" aria-hidden="true">≡</span> Transcript
+                </a>
+
+                <p class="nav-label">Insights</p>
+                <a class="nav-link {{ 'active' if endpoint == 'main.analysis_page' }}" href="{{ url_for('main.analysis_page') }}">
+                    <span class="nav-icon" aria-hidden="true">◔</span> My analysis
+                </a>
+                <a class="nav-link {{ 'active' if endpoint in ['main.reports', 'main.chart_image', 'main.export_csv'] }}" href="{{ url_for('main.reports') }}">
+                    <span class="nav-icon" aria-hidden="true">◒</span> Charts &amp; reports
+                </a>
+
+                <p class="nav-label">Account</p>
+                <a class="nav-link {{ 'active' if endpoint in ['main.settings', 'main.update_profile', 'main.update_target', 'main.reset_data'] }}" href="{{ url_for('main.settings') }}">
+                    <span class="nav-icon" aria-hidden="true">⚙</span> Settings
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>Local-only · No login</p>
+                <span>Your marks stay in this computer's SQLite database.</span>
+            </div>
+        </aside>
+        <div class="sidebar-overlay" data-sidebar-close hidden></div>
+        {% endif %}
+
+        <div class="app-main">
+            <header class="topbar {{ 'public-topbar' if not profile }}">
+                {% if profile %}
+                <div class="topbar-leading">
+                    <button class="icon-button menu-toggle" type="button" data-sidebar-open aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <div>
+                        <p class="page-eyebrow">{% block page_eyebrow %}My college record{% endblock %}</p>
+                        <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                    </div>
+                </div>
+                <div class="topbar-actions">
+                    {% block topbar_actions %}{% endblock %}
+                    <button class="button button-ghost theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme">
+                        <span data-theme-icon aria-hidden="true">◐</span>
+                        <span data-theme-label>Dark mode</span>
+                    </button>
+                </div>
+                {% else %}
+                <a class="brand brand-public" href="{{ url_for('main.index') }}">
+                    <span class="brand-mark" aria-hidden="true">C</span>
+                    <span class="brand-copy">
+                        <strong>CampusMarks</strong>
+                        <small>College marks, SGPA &amp; CGPA</small>
+                    </span>
+                </a>
+                <div class="topbar-actions">
+                    <span class="no-login-pill">No login required</span>
+                    <button class="button button-ghost theme-toggle" type="button" data-theme-toggle aria-label="Toggle color theme">
+                        <span data-theme-icon aria-hidden="true">◐</span>
+                        <span data-theme-label>Dark mode</span>
+                    </button>
+                </div>
+                {% endif %}
+            </header>
+
+            <main class="content {{ 'public-main' if not profile }}" id="main-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    <div class="flash-stack" aria-live="polite">
+                        {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}" role="{{ 'alert' if category == 'error' else 'status' }}">
+                            <span class="flash-mark" aria-hidden="true">{{ '!' if category == 'error' else ('i' if category == 'warning' else '✓') }}</span>
+                            <span class="flash-text">{{ message }}</span>
+                            <button type="button" class="flash-close" data-dismiss-flash aria-label="Dismiss notification">×</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endwith %}
+                {% block content %}{% endblock %}
+            </main>
+
+            {% if not profile %}
+            <footer class="public-footer">
+                <p>CampusMarks · College student marks &amp; CGPA analyzer</p>
+                <p>Flask, SQLite and Matplotlib · Data stays on this computer</p>
+            </footer>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

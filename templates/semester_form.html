@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ form_heading }}{% endblock %}
+{% block page_eyebrow %}{{ form_kicker }}{% endblock %}
+{% block page_title %}{{ form_heading }}{% endblock %}
+
+{% block content %}
+<div class="form-page narrow-form-page">
+    <div class="form-page-main">
+        <a class="breadcrumb" href="{{ cancel_url }}">← Back</a>
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="section-kicker">{{ form_kicker }}</p>
+                    <h2>{% if semester %}Update this semester{% else %}Create a semester{% endif %}</h2>
+                </div>
+            </div>
+            <form method="post" action="{{ form_action }}" class="form-stack">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-grid two-column">
+                    <div class="field">
+                        <label for="semester-number">Semester number <span class="required-mark">*</span></label>
+                        <input id="semester-number" name="number" type="number" min="1" max="12" step="1" required value="{{ form_values.get('number', '') }}">
+                        <span class="field-hint">Use your college's semester numbering (1–12). Each number can appear once.</span>
+                    </div>
+                    <div class="field">
+                        <label for="semester-year">Academic year</label>
+                        <input id="semester-year" name="academic_year" type="text" maxlength="20" value="{{ form_values.get('academic_year', '') }}" placeholder="e.g. 2024-25">
+                        <span class="field-hint">Optional, but useful on your transcript.</span>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="button button-primary">{{ submit_label }}</button>
+                    <a class="button button-ghost" href="{{ cancel_url }}">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <aside class="form-page-side">
+        <section class="card guidance-card">
+            <p class="section-kicker">How it fits together</p>
+            <h3>Semester → subject → mark</h3>
+            <p>A semester contains any number of subjects. Each subject has credits and maximum marks, and the marks you enter determine its grade and SGPA contribution.</p>
+        </section>
+        <section class="card guidance-card">
+            <p class="section-kicker">Status meanings</p>
+            <h3>Clear language</h3>
+            <ul class="criteria-list">
+                <li><span class="criteria-check">✓</span> <strong>Cleared</strong> — every subject has a passing mark.</li>
+                <li><span class="criteria-check">!</span> <strong>Backlog</strong> — all marks entered, at least one below 40%.</li>
+                <li><span class="criteria-check">…</span> <strong>In progress</strong> — at least one mark is still pending.</li>
+            </ul>
+        </section>
+    </aside>
+</div>
+{% endblock %}

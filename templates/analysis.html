@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}My analysis{% endblock %}
+{% block page_eyebrow %}Personal insights{% endblock %}
+{% block page_title %}My academic analysis{% endblock %}
+{% block topbar_actions %}
+<div class="header-action-group no-print">
+    <a class="button button-secondary" href="{{ url_for('main.reports') }}">Open reports</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <div>
+        <p class="section-kicker">Only your data</p>
+        <h2>Patterns across your transcript.</h2>
+        <p class="muted">No class averages or student rankings — just clear comparisons of your own semesters, subjects and grade bands.</p>
+    </div>
+</section>
+
+{% if not transcript.has_data %}
+<section class="card">
+    <div class="empty-state">
+        <span class="empty-mark" aria-hidden="true">◔</span>
+        <h3>Analysis needs a few marks</h3>
+        <p>Add a semester, list your subjects and enter at least one mark to unlock subject and grade analysis.</p>
+        <a class="button button-primary" href="{{ url_for('main.semester_new') }}">Add semester</a>
+    </div>
+</section>
+{% else %}
+<section class="stats-grid analysis-stats" aria-label="Analysis summary">
+    <article class="stat-card stat-card-compact">
+        <span class="stat-icon icon-pass" aria-hidden="true">CG</span>
+        <div>
+            <p class="stat-label">CGPA</p>
+            <strong class="stat-value">{{ transcript.cgpa|num }}</strong>
+            <span class="stat-note">Target {{ transcript.target_cgpa|num }}</span>
+        </div>
+    </article>
+    <article class="stat-card stat-card-compact">
+        <span class="stat-icon icon-average" aria-hidden="true">%</span>
+        <div>
+            <p class="stat-label">Graded average</p>
+            <strong class="stat-value">{{ transcript.graded_percentage|num(1) }}<small>%</small></strong>
+            <span class="stat-note">All entered marks</span>
+        </div>
+    </article>
+    <article class="stat-card stat-card-compact">
+        <span class="stat-icon icon-subjects" aria-hidden="true">S</span>
+        <div>
+            <p class="stat-label">Graded subjects</p>
+            <strong class="stat-value">{{ transcript.graded_subject_count }}</strong>
+            <span class="stat-note">{{ transcript.pending_subject_count }} pending</span>
+        </div>
+    </article>
+    <article class="stat-card stat-card-compact">
+        <span class="stat-icon icon-classes" aria-hidden="true">B</span>
+        <div>
+            <p class="stat-label">Backlogs</p>
+            <strong class="stat-value">{{ transcript.failed_subject_count }}</strong>
+            <span class="stat-note">{{ transcript.credits_backlog|num(1) }} backlog credits</span>
+        </div>
+    </article>
+</section>
+
+<div class="analysis-grid dashboard-grid">
+    <section class="card">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Subject performance</p>
+                <h2>Where your marks land</h2>
+            </div>
+            <a class="text-link" href="{{ url_for('main.reports') }}">Larger charts →</a>
+        </div>
+        <img class="report-chart" src="{{ url_for('main.chart_image', chart_name='subject_marks', v=chart_version) }}" alt="Horizontal bars of your subject percentages">
+    </section>
+
+    <aside class="card">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Highlights</p>
+                <h2>Strong and weak spots</h2>
+            </div>
+        </div>
+        {% if transcript.graded_subject_count %}
+        <div class="subject-highlights">
+            <div>
+                <span class="highlight-label">Best subject</span>
+                <strong>{{ transcript.best_subject.name }}</strong>
+                <span>{{ transcript.best_subject.percentage|num(1) }}% · Grade {{ transcript.best_subject.grade_letter }} · Semester {{ transcript.best_subject.semester_number }}</span>
+            </div>
+            <div>
+                <span class="highlight-label">Lowest subject</span>
+                <strong>{{ transcript.weakest_subject.name }}</strong>
+                <span>{{ transcript.weakest_subject.percentage|num(1) }}% · Grade {{ transcript.weakest_subject.grade_letter }} · Semester {{ transcript.weakest_subject.semester_number }}</span>
+            </div>
+            <div>
+                <span class="highlight-label">Best completed semester</span>
+                {% if transcript.best_semester %}
+                <strong>Semester {{ transcript.best_semester.number }}</strong>
+                <span>{{ transcript.best_semester.sgpa|num }} SGPA · {{ transcript.best_semester.academic_year or 'year not set' }}</span>
+                {% else %}
+                <strong>Not available yet</strong>
+                <span>Finish a semester to compare SGPA.</span>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state compact-empty">
+            <p>Enter a subject mark to compare your strongest and weakest subjects.</p>
+        </div>
+        {% endif %}
+    </aside>
+
+    <section class="card">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Grade mix</p>
+                <h2>Grade distribution</h2>
+            </div>
+        </div>
+        <img class="report-chart" src="{{ url_for('main.chart_image', chart_name='grade_distribution', v=chart_version) }}" alt="Donut chart of your grades">
+        <div class="table-wrap analysis-table">
+            <table class="data-table">
+                <thead><tr><th scope="col">Grade</th><th scope="col">Band</th><th scope="col">Subjects</th><th scope="col">Share</th></tr></thead>
+                <tbody>
+                    {% for row in grade_rows if row.count %}
+                    <tr>
+                        <td><span class="grade-chip grade-{{ row.letter|grade_class }}">{{ row.letter }}</span></td>
+                        <td>{% if row.points == 0 %}Below 40%{% else %}{{ row.points }} points{% endif %}</td>
+                        <td>{{ row.count }}</td>
+                        <td>{{ row.share|num(1) }}%</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="muted">No graded subjects yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-heading">
+            <div>
+                <p class="section-kicker">Credits</p>
+                <h2>Credit progress</h2>
+            </div>
+        </div>
+        <img class="report-chart" src="{{ url_for('main.chart_image', chart_name='credit_progress', v=chart_version) }}" alt="Stacked bars of earned, backlog and pending credits">
+        <div class="mini-stats-grid analysis-credit-grid">
+            <div class="mini-stat"><span>Earned</span><strong>{{ transcript.credits_earned|num(1) }}</strong></div>
+            <div class="mini-stat"><span>Pending</span><strong>{{ transcript.credits_pending|num(1) }}</strong></div>
+            <div class="mini-stat"><span>Backlog</span><strong>{{ transcript.credits_backlog|num(1) }}</strong></div>
+        </div>
+    </section>
+</div>
+
+<section class="card analysis-table">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">All subjects</p>
+            <h2>Subject ranking</h2>
+        </div>
+        <span class="count-badge">{{ transcript.graded_subject_count }} graded</span>
+    </div>
+    {% if transcript.ranked_subjects %}
+    <div class="table-wrap table-scroll">
+        <table class="data-table subject-ranking-table">
+            <thead>
+                <tr>
+                    <th scope="col">Rank</th>
+                    <th scope="col">Subject</th>
+                    <th scope="col">Semester</th>
+                    <th scope="col">Credits</th>
+                    <th scope="col">Marks</th>
+                    <th scope="col">Percentage</th>
+                    <th scope="col">Grade</th>
+                    <th scope="col">Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for subject in transcript.ranked_subjects %}
+                <tr>
+                    <td><span class="rank-badge rank-{{ loop.index if loop.index <= 3 else 'other' }}">#{{ loop.index }}</span></td>
+                    <td>
+                        <strong>{{ subject.name }}</strong>
+                        {% if subject.code %}<span class="block-small">{{ subject.code }}</span>{% endif %}
+                        <span class="mobile-meta">Semester {{ subject.semester_number }} · {{ subject.credits|num(1) }} credits</span>
+                    </td>
+                    <td>{{ subject.semester_number }}</td>
+                    <td>{{ subject.credits|num(1) }}</td>
+                    <td>{{ subject.marks_obtained|num(0) }} / {{ subject.max_marks|num(0) }}</td>
+                    <td>{{ subject.percentage|num(1) }}%</td>
+                    <td><span class="grade-chip grade-{{ subject.grade_letter|grade_class }}">{{ subject.grade_letter }}</span></td>
+                    <td><span class="status-badge status-{{ subject.status|status_class }}">{{ subject.status|status_label }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="muted">No graded subjects yet.</p>
+    {% endif %}
+</section>
+
+<section class="card analysis-table">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Semester comparison</p>
+            <h2>SGPA and percentage</h2>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table semester-comparison-table">
+            <thead>
+                <tr>
+                    <th scope="col">Semester</th>
+                    <th scope="col">Year</th>
+                    <th scope="col">Subjects</th>
+                    <th scope="col">Credits</th>
+                    <th scope="col">Percentage</th>
+                    <th scope="col">SGPA</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for semester in transcript.semesters %}
+                <tr>
+                    <td>
+                        <strong>Semester {{ semester.number }}</strong>
+                        <span class="mobile-meta">{{ semester.academic_year or 'Year not set' }} · {{ semester.graded_subject_count }}/{{ semester.subject_count }} subjects · {{ semester.credits_total|num(1) }} credits</span>
+                    </td>
+                    <td>{{ semester.academic_year or '—' }}</td>
+                    <td>{{ semester.graded_subject_count }} / {{ semester.subject_count }}</td>
+                    <td>{{ semester.credits_total|num(1) }}</td>
+                    <td>{{ semester.percentage|num(1) }}%</td>
+                    <td>{{ semester.sgpa|num }}</td>
+                    <td><span class="status-badge status-{{ semester.status|status_class }}">{{ semester.status|status_label }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_eyebrow %}Error {{ code }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <p class="error-code">{{ code }}</p>
+    <h2>{{ title }}</h2>
+    <p>{{ message }}</p>
+    <div class="hero-actions">
+        {% if profile %}
+        <a class="button button-primary" href="{{ url_for('main.dashboard') }}">Back to dashboard</a>
+        <a class="button button-secondary" href="{{ url_for('main.semesters') }}">My semesters</a>
+        {% else %}
+        <a class="button button-primary" href="{{ url_for('main.index') }}">Back to welcome</a>
+        <a class="button button-secondary" href="{{ url_for('main.setup') }}">Set up my profile</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

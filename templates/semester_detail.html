@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Semester {{ semester.number }}{% endblock %}
+{% block page_eyebrow %}Semester record{% endblock %}
+{% block page_title %}Semester {{ semester.number }}{% endblock %}
+{% block topbar_actions %}
+<a class="button button-primary" href="{{ url_for('main.subject_new', semester_id=semester.id) }}">Add subject</a>
+{% endblock %}
+
+{% block content %}
+<a class="breadcrumb" href="{{ url_for('main.semesters') }}">← All semesters</a>
+
+<section class="page-intro">
+    <div>
+        <p class="section-kicker">{{ semester.academic_year or 'Academic year not set' }}</p>
+        <h2>Semester {{ semester.number }} subjects &amp; marks.</h2>
+        <p class="muted">
+            {{ semester.subject_count }} subject{{ '' if semester.subject_count == 1 else 's' }} ·
+            {{ semester.graded_subject_count }} graded ·
+            {{ semester.credits_total|num(1) }} credits.
+            {% if semester.is_provisional %}SGPA is provisional until all marks are entered.{% endif %}
+        </p>
+    </div>
+    <div class="intro-actions">
+        <a class="button button-secondary" href="{{ url_for('main.semester_edit', semester_id=semester.id) }}">Edit semester</a>
+        <a class="button button-secondary" href="{{ url_for('main.subject_new', semester_id=semester.id) }}">Add subject</a>
+    </div>
+</section>
+
+<section class="stats-grid" aria-label="Semester summary">
+    <article class="stat-card">
+        <span class="stat-icon icon-pass" aria-hidden="true">SG</span>
+        <div>
+            <p class="stat-label">SGPA</p>
+            <strong class="stat-value">{{ semester.sgpa|num }}</strong>
+            <span class="stat-note">{% if semester.is_provisional %}Provisional, graded subjects only{% else %}All {{ semester.subject_count }} subjects graded{% endif %}</span>
+        </div>
+    </article>
+    <article class="stat-card">
+        <span class="stat-icon icon-average" aria-hidden="true">%</span>
+        <div>
+            <p class="stat-label">Marks percentage</p>
+            <strong class="stat-value">{{ semester.percentage|num(1) }}<small>%</small></strong>
+            <span class="stat-note">{{ semester.marks_total|num(1) }} of {{ semester.graded_max_marks|num(1) }} graded marks</span>
+        </div>
+    </article>
+    <article class="stat-card">
+        <span class="stat-icon icon-subjects" aria-hidden="true">CR</span>
+        <div>
+            <p class="stat-label">Credits earned</p>
+            <strong class="stat-value">{{ semester.credits_earned|num(1) }}<small>/ {{ semester.credits_total|num(1) }}</small></strong>
+            <span class="stat-note">{{ semester.pending_subject_count }} pending · {{ semester.fail_count }} backlog</span>
+        </div>
+    </article>
+    <article class="stat-card">
+        <span class="stat-icon icon-classes" aria-hidden="true">✓</span>
+        <div>
+            <p class="stat-label">Semester status</p>
+            <strong class="stat-value stat-value-text">{{ semester.status|status_label }}</strong>
+            <span class="stat-note">{% if semester.failed_subjects %}{{ semester.failed_subjects|join(', ') }}{% else %}All entered marks meet 40%{% endif %}</span>
+        </div>
+    </article>
+</section>
+
+{% if semester.is_provisional %}
+<div class="callout callout-warning">
+    <div>
+        <strong>This semester is still in progress.</strong>
+        <p>SGPA uses only the {{ semester.graded_subject_count }} subjects with marks. Pending subjects are not counted as zero, and this semester is excluded from the official CGPA.</p>
+    </div>
+    <a class="button button-secondary button-compact" href="{{ url_for('main.subject_new', semester_id=semester.id) }}">Add another subject</a>
+</div>
+{% elif semester.status == 'BACKLOG' %}
+<div class="callout callout-warning">
+    <div>
+        <strong>Backlog subject{{ '' if semester.fail_count == 1 else 's' }} recorded.</strong>
+        <p>{{ semester.failed_subjects|join(', ') }} scored below 40%. Those credits count as backlog until the subject is cleared.</p>
+    </div>
+    <a class="button button-secondary button-compact" href="{{ url_for('main.results') }}">View transcript</a>
+</div>
+{% endif %}
+
+<section class="card">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Subjects &amp; marks</p>
+            <h2>Enter marks as they arrive</h2>
+        </div>
+        <a class="button button-secondary button-compact" href="{{ url_for('main.subject_new', semester_id=semester.id) }}">Add subject</a>
+    </div>
+
+    {% if semester.subjects %}
+    <form method="post" action="{{ url_for('main.save_marks', semester_id=semester.id) }}" class="marks-form" data-marks-form>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="table-wrap">
+            <table class="data-table marks-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Subject</th>
+                        <th scope="col">Credits</th>
+                        <th scope="col">Max</th>
+                        <th scope="col">Marks</th>
+                        <th scope="col">%</th>
+                        <th scope="col">Grade</th>
+                        <th scope="col">Result</th>
+                        <th scope="col"><span class="sr-only">Edit</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subject in semester.subjects %}
+                    <tr class="{{ 'row-incomplete' if subject.is_pending }}">
+                        <td>
+                            <strong>{{ subject.name }}</strong>
+                            {% if subject.code %}<span class="block-small">{{ subject.code }}</span>{% endif %}
+                        </td>
+                        <td>{{ subject.credits|num(1) }}</td>
+                        <td>{{ subject.max_marks|num(0) }}</td>
+                        <td>
+                            <label class="sr-only" for="mark-{{ subject.id }}">Marks for {{ subject.name }}</label>
+                            <input
+                                id="mark-{{ subject.id }}"
+                                class="mark-input"
+                                type="number"
+                                name="mark_{{ subject.id }}"
+                                value="{{ subject.marks_obtained|input_num }}"
+                                min="0"
+                                max="{{ subject.max_marks|input_num }}"
+                                step="any"
+                                inputmode="decimal"
+                                placeholder="Pending"
+                                data-max="{{ subject.max_marks|input_num }}"
+                                data-subject-name="{{ subject.name }}"
+                            >
+                        </td>
+                        <td>{{ subject.percentage|num(1) }}</td>
+                        <td>
+                            {% if subject.grade_letter %}
+                            <span class="grade-chip grade-{{ subject.grade_letter|grade_class }}">{{ subject.grade_letter }}</span>
+                            {% else %}
+                            <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td><span class="status-badge status-{{ subject.status|status_class }}">{{ subject.status|status_label }}</span></td>
+                        <td class="table-actions"><a class="text-link" href="{{ url_for('main.subject_edit', subject_id=subject.id) }}">Edit</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th scope="row">Semester totals</th>
+                        <th>{{ semester.credits_total|num(1) }}</th>
+                        <th>{{ semester.graded_max_marks|num(0) }}</th>
+                        <th>{{ semester.marks_total|num(0) }}</th>
+                        <th>{{ semester.percentage|num(1) }}%</th>
+                        <th colspan="3">{{ semester.sgpa|num }} SGPA</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <p class="client-error" data-client-error hidden></p>
+        <div class="marks-form-footer">
+            <span class="small-note">Leave a mark blank if the result has not arrived. Blank never means zero.</span>
+            <div class="form-actions">
+                <a class="button button-ghost" href="{{ url_for('main.semesters') }}">Back</a>
+                <button type="submit" class="button button-primary">Save marks</button>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="empty-state compact-empty">
+        <span class="empty-mark" aria-hidden="true">◫</span>
+        <h3>No subjects in this semester</h3>
+        <p>Add a subject with its credits and maximum marks to begin.</p>
+        <a class="button button-primary button-compact" href="{{ url_for('main.subject_new', semester_id=semester.id) }}">Add the first subject</a>
+    </div>
+    {% endif %}
+</section>
+
+<section class="card danger-zone">
+    <div class="card-heading">
+        <div>
+            <p class="section-kicker">Permanent action</p>
+            <h2>Delete Semester {{ semester.number }}</h2>
+        </div>
+    </div>
+    <p>Deleting this semester also removes its {{ semester.subject_count }} subject{{ '' if semester.subject_count == 1 else 's' }} and every saved mark. This cannot be undone.</p>
+    <form method="post" action="{{ url_for('main.semester_delete', semester_id=semester.id) }}" data-confirm="Delete Semester {{ semester.number }} and all of its subjects? This cannot be undone.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="button button-danger">Delete semester</button>
+    </form>
+</section>
+{% endblock %}

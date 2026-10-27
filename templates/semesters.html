@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Semesters{% endblock %}
+{% block page_eyebrow %}Transcript structure{% endblock %}
+{% block page_title %}My semesters{% endblock %}
+{% block topbar_actions %}
+{% if transcript.next_semester_number %}
+<a class="button button-primary" href="{{ url_for('main.semester_new') }}">Add semester</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <div>
+        <p class="section-kicker">Semester by semester</p>
+        <h2>Your academic timeline.</h2>
+        <p class="muted">Each semester holds its own subjects, credits and marks. SGPA is recalculated whenever a mark changes.</p>
+    </div>
+    <div class="intro-actions">
+        {% if transcript.next_semester_number %}
+        <a class="button button-secondary" href="{{ url_for('main.semester_new') }}">Add semester</a>
+        {% endif %}
+        <a class="button button-secondary" href="{{ url_for('main.results') }}">View transcript</a>
+    </div>
+</section>
+
+<section class="stats-grid" aria-label="Semester summary">
+    <article class="stat-card">
+        <span class="stat-icon icon-classes" aria-hidden="true">S</span>
+        <div>
+            <p class="stat-label">Semesters</p>
+            <strong class="stat-value">{{ transcript.semester_count }}</strong>
+            <span class="stat-note">{{ transcript.completed_semester_count }} complete</span>
+        </div>
+    </article>
+    <article class="stat-card">
+        <span class="stat-icon icon-subjects" aria-hidden="true">C</span>
+        <div>
+            <p class="stat-label">Total subjects</p>
+            <strong class="stat-value">{{ transcript.subject_count }}</strong>
+            <span class="stat-note">{{ transcript.graded_subject_count }} graded · {{ transcript.pending_subject_count }} pending</span>
+        </div>
+    </article>
+    <article class="stat-card">
+        <span class="stat-icon icon-pass" aria-hidden="true">CR</span>
+        <div>
+            <p class="stat-label">Credits earned</p>
+            <strong class="stat-value">{{ transcript.credits_earned|num(1) }}</strong>
+            <span class="stat-note">of {{ transcript.credits_total|num(1) }} credits added</span>
+        </div>
+    </article>
+    <article class="stat-card">
+        <span class="stat-icon icon-average" aria-hidden="true">CG</span>
+        <div>
+            <p class="stat-label">CGPA</p>
+            <strong class="stat-value">{{ transcript.cgpa|num }}</strong>
+            <span class="stat-note">Completed semesters only</span>
+        </div>
+    </article>
+</section>
+
+{% if transcript.semesters %}
+<div class="semester-grid">
+    {% for semester in transcript.semesters %}
+    <article class="semester-card">
+        <div class="semester-card-head">
+            <div>
+                <p class="section-kicker">{{ semester.academic_year or 'Academic year not set' }}</p>
+                <h2>Semester {{ semester.number }}</h2>
+            </div>
+            <span class="status-badge status-{{ semester.status|status_class }}">{{ semester.status|status_label }}</span>
+        </div>
+        <div class="semester-card-stats">
+            <div>
+                <span>SGPA</span>
+                <strong>{{ semester.sgpa|num }}</strong>
+            </div>
+            <div>
+                <span>Percentage</span>
+                <strong>{{ semester.percentage|num(1) }}<small>%</small></strong>
+            </div>
+            <div>
+                <span>Credits</span>
+                <strong>{{ semester.credits_earned|num(1) }}<small>/ {{ semester.credits_total|num(1) }}</small></strong>
+            </div>
+        </div>
+        <div class="semester-credit-track" aria-hidden="true">
+            <span class="semester-credit-earned" style="width: {{ (semester.credits_earned / semester.credits_total * 100) if semester.credits_total else 0 }}%"></span>
+            <span class="semester-credit-pending" style="width: {{ (semester.credits_pending / semester.credits_total * 100) if semester.credits_total else 0 }}%"></span>
+            <span class="semester-credit-backlog" style="width: {{ (semester.credits_backlog / semester.credits_total * 100) if semester.credits_total else 0 }}%"></span>
+        </div>
+        <div class="semester-card-meta">
+            <span>{{ semester.subject_count }} subject{{ '' if semester.subject_count == 1 else 's' }}</span>
+            <span>{{ semester.graded_subject_count }} graded</span>
+            {% if semester.is_provisional %}<span class="text-incomplete">SGPA provisional</span>{% endif %}
+        </div>
+        {% if semester.pending_subject_count %}
+        <p class="semester-note">{{ semester.pending_subject_count }} mark{{ '' if semester.pending_subject_count == 1 else 's' }} still pending.</p>
+        {% elif semester.fail_count %}
+        <p class="semester-note text-fail">{{ semester.fail_count }} backlog subject{{ '' if semester.fail_count == 1 else 's' }}.</p>
+        {% endif %}
+        <a class="button button-secondary button-full" href="{{ url_for('main.semester_detail', semester_id=semester.id) }}">Open semester</a>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <span class="empty-mark" aria-hidden="true">▤</span>
+        <h3>Your transcript is empty</h3>
+        <p>Add Semester 1, then list its subjects and credits. Marks can be entered now or later.</p>
+        <a class="button button-primary" href="{{ url_for('main.semester_new') }}">Add my first semester</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
