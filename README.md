@@ -19,6 +19,7 @@ CSV exports. All data stays in a local SQLite file.
 
 - [What the application does](#what-the-application-does)
 - [Quick start on Windows](#quick-start-on-windows)
+- [Deploy a public demo](#deploy-a-public-demo)
 - [First-time walkthrough](#first-time-walkthrough)
 - [Grading and calculation rules](#grading-and-calculation-rules)
 - [Demo transcript](#demo-transcript)
@@ -172,6 +173,57 @@ changes nothing.
 
 The welcome page also has an **Explore the college demo** button. It is shown
 only while no profile exists.
+
+---
+
+## Deploy a public demo
+
+The repository includes `wsgi.py` and `render.yaml` so it can run on
+[Render](https://render.com) with Gunicorn.
+
+> **Do not put real academic data on a public deployment.** This app has no
+> login by design, so anyone with the URL can edit or reset the record.
+
+Render's free web services also have an ephemeral filesystem. The SQLite
+database is erased whenever the service redeploys, restarts or wakes after its
+idle shutdown. That is acceptable for a fictional capstone demo, but it is not
+suitable for long-term personal use.
+
+### Deploy with the Render Blueprint
+
+1. Make sure the latest commit is pushed to GitHub.
+2. Sign in to the Render Dashboard with GitHub.
+3. Choose **New → Blueprint** and connect this repository.
+4. Review the detected `campusmarks-iitp` service and apply the Blueprint.
+5. Wait for the build, then open the generated `onrender.com` URL.
+6. On first load, use **Explore the college demo** to populate the empty
+   database.
+
+The Blueprint installs `requirements.txt` and starts:
+
+```text
+gunicorn --worker-class gthread --workers 1 --threads 4 --bind 0.0.0.0:$PORT wsgi:app
+```
+
+It also generates a random `SECRET_KEY`. The first request after 15 minutes of
+inactivity can take about a minute while Render wakes the free instance.
+
+If the service name is already taken, change `name:` in `render.yaml` before
+applying the Blueprint. If you create the web service manually instead of using
+the Blueprint, use the same build and start commands and add a `SECRET_KEY`
+environment variable with a long random value.
+
+### Keeping data on Render
+
+Persistent disks are not available on Render's free plan. On a paid instance,
+mount a disk at `/var/data` and set:
+
+```text
+MARKS_DATABASE=/var/data/college_marks.db
+```
+
+Keep the service at one Gunicorn worker when using SQLite. For a no-cost
+personal tracker, running the app locally remains the safer option.
 
 ---
 
@@ -456,6 +508,8 @@ SQLite: instance/college_marks.db
 | `charts.py` | Five Matplotlib figures and empty states |
 | `demo_data.py` | Fictional student, four-semester demo and reset helper |
 | `seed_demo.py` | Idempotent command-line demo seeder |
+| `wsgi.py` | Production WSGI entry point for Gunicorn and other hosts |
+| `render.yaml` | Render Blueprint for a free Gunicorn web service |
 | `templates/` | Jinja2 pages, transcript, forms, report and error pages |
 | `static/css/style.css` | Layout, college components, dark mode, print and responsive styles |
 | `static/js/main.js` | Theme, mobile navigation, flash dismissal, confirmations, printing, client hints |
@@ -475,6 +529,8 @@ student marks analysis program/
 ├── database.py
 ├── demo_data.py
 ├── seed_demo.py
+├── wsgi.py
+├── render.yaml
 ├── requirements.txt
 ├── .gitignore
 ├── README.md
@@ -569,10 +625,10 @@ It covers:
 - all five chart renderers with normal, empty, pending-only and missing-profile
   data.
 
-**Verified result on 25 October 2026:**
+**Verified result on 27 October 2026:**
 
 ```text
-Ran 61 tests in 5.283s
+Ran 61 tests in 4.095s
 
 OK
 ```
@@ -632,7 +688,7 @@ The app reads these environment variables before applying defaults:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `SECRET_KEY` | Local development fallback | Flask session signing, including CSRF tokens |
+| `SECRET_KEY` | Local development fallback | Flask session signing, including CSRF tokens. Set a long random value for any public deployment. |
 | `MARKS_DATABASE` | `instance/college_marks.db` | SQLite database path |
 
 The database directory is created automatically. For a different local database:
